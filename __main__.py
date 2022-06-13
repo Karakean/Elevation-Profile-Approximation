@@ -61,7 +61,7 @@ def residual(matrix, vec_x, vec_b):
     return res
 
 
-def LU_decomposition(A, b):
+def LU_decomposition(A, b):  # with pivoting
     x = [0 for _ in range(A.N)]
     y = [0 for _ in range(A.N)]
     L, U, P = create_LUP_matrices(A)
@@ -80,14 +80,13 @@ def LU_decomposition(A, b):
     return x, y, norm(res)
 
 
-def make_intervals(beg, end, n, rounded=False):
-    vec = []
+def make_intervals(beg, end, n):
+    vec = []  # vector of indexes of intervals
     x = beg
     dx = (end-beg)/(n-1)
     for i in range(n):
-        if rounded:
-            x = math.floor(x)
-        vec.append(x)
+        m = min(round(x), end-1)  # avoiding oor exception
+        vec.append(m)
         x += dx
     return vec
 
@@ -97,8 +96,11 @@ def read_input(path, delimiter):
         vec_x, vec_y = [], []
         cr = csv.reader(f, delimiter=delimiter)
         for x, y in cr:
-            vec_x.append(float(x))
-            vec_y.append(float(y))
+            try:
+                vec_x.append(float(x))
+                vec_y.append(float(y))
+            except ValueError as error:  # labels etc
+                continue
     return vec_x, vec_y
 
 
@@ -106,7 +108,7 @@ def phi(vec_x, x, i, n):
     product = 1.0
     for j in range(n):
         if j == i:
-            continue  # j cannot be equal to i, diving by zero
+            continue  # avoid diving by zero
         product *= (x-vec_x[j])/(vec_x[i]-vec_x[j])
     return product
 
@@ -118,24 +120,26 @@ def Lagrange_interpolation(vec_x, vec_y, x, n):
     return series_sum
 
 
-def main():
-    data_x, data_y = read_input('data/chelm.txt', ' ')
-    number = 15
-    intervals = make_intervals(0, len(data_x), number, True)
+def Lagrange_part(name, path, delimiter, intervals_num):
+    data_x, data_y = read_input(path, delimiter)
+    intervals = make_intervals(0, len(data_x), intervals_num)
     vec_x = [data_x[i] for i in intervals]
     vec_y = [data_y[i] for i in intervals]
     interpol = []
-
-    stop = 0
     for i, x in enumerate(data_x):
         if intervals[-1] < i:
             break
         interpol.append(Lagrange_interpolation(vec_x, vec_y, x, len(vec_x)))
-
     plt.plot(data_x, data_y)
     plt.plot(vec_x, vec_y, 'o')
-    plt.plot(data_x[:intervals[-1]+1], interpol)
+    plt.plot(data_x[:intervals[-1] + 1], interpol)
+    tmp_str = 'Lagrange polynomial, ' + name + ', N = ' + str(intervals_num)
+    plt.title(tmp_str)
     plt.show()
+
+
+def main():
+    Lagrange_part('Mount Everest', 'data/MountEverest.csv', ',', 15)
 
 
 main()
