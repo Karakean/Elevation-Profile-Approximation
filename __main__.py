@@ -1,4 +1,6 @@
+import csv
 import math
+import matplotlib.pyplot as plt
 from matrix import Matrix
 
 
@@ -78,20 +80,62 @@ def LU_decomposition(A, b):
     return x, y, norm(res)
 
 
-def Lagrange_interpolation(n):
-    pass
+def make_intervals(beg, end, n, rounded=False):
+    vec = []
+    x = beg
+    dx = (end-beg)/(n-1)
+    for i in range(n):
+        if rounded:
+            x = math.floor(x)
+        vec.append(x)
+        x += dx
+    return vec
+
+
+def read_input(path, delimiter):
+    with open(path, 'r') as f:
+        vec_x, vec_y = [], []
+        cr = csv.reader(f, delimiter=delimiter)
+        for x, y in cr:
+            vec_x.append(float(x))
+            vec_y.append(float(y))
+    return vec_x, vec_y
+
+
+def phi(vec_x, x, i, n):
+    product = 1.0
+    for j in range(n):
+        if j == i:
+            continue  # j cannot be equal to i, diving by zero
+        product *= (x-vec_x[j])/(vec_x[i]-vec_x[j])
+    return product
+
+
+def Lagrange_interpolation(vec_x, vec_y, x, n):
+    series_sum = 0
+    for i in range(n):
+        series_sum += vec_y[i]*phi(vec_x, x, i, n)
+    return series_sum
 
 
 def main():
-    a1 = 3
-    a2 = a3 = -1
-    f = 4
-    N = 965
-    A = Matrix(N, a1, a2, a3)
-    b = [math.sin(i * (f + 1)) for i in range(N)]
-    x, y, norm_res = LU_decomposition(A, b)
-    print(norm_res)
-    pass
+    data_x, data_y = read_input('data/chelm.txt', ' ')
+    number = 15
+    intervals = make_intervals(0, len(data_x), number, True)
+    vec_x = [data_x[i] for i in intervals]
+    vec_y = [data_y[i] for i in intervals]
+    interpol = []
+
+    stop = 0
+    for i, x in enumerate(data_x):
+        if intervals[-1] < i:
+            break
+        interpol.append(Lagrange_interpolation(vec_x, vec_y, x, len(vec_x)))
+
+    plt.plot(data_x, data_y)
+    plt.plot(vec_x, vec_y, 'o')
+    plt.plot(data_x[:intervals[-1]+1], interpol)
+    plt.show()
 
 
 main()
